@@ -1,0 +1,9 @@
+{
+  "type": "mariadb",
+  "dbname": "foobardb",
+  "mode": "dump",
+  "user" : "foo",
+  "password": "foobar",
+  "backup_dir": "/home/backup",
+  "compression": "bz2"
+}

@@ -1,0 +1,7 @@
+{
+  "type": "dir",
+  "path": "/etc",
+  "backup_dir": "/home/seba/backup",
+  "name": "etc",
+  "compression": "gz"
+}
