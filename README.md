@@ -2,7 +2,7 @@
  Simple backup solution for backuping directory and databases.
 ## Configs
  Configs files are json files for example:
- ```json
+```json
 {
   "type": "dir",
   "path": "/etc",

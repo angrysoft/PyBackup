@@ -20,13 +20,19 @@ class Backup:
 
     def run(self):
         print(self.config)
+
         configPath = self.config.dir
         if os.path.isdir(configPath):
-            if self.config.config:
-                self.parseConfig((os.path.join(configPath, self.config.config)))
+            if self.config.configs:
+                configList = self.config.configs
             else:
-                for c in os.listdir(configPath):
+                configList = os.listdir(configPath)
+
+            for c in configList:
+                if c.endswith('.json'):
                     self.parseConfig(os.path.join(configPath, c))
+                else:
+                    self._info('File "{}" not end with .json SKIPING'.format(c))
 
     def parseConfig(self, configFile):
         with open(configFile, 'r') as jconfig:
@@ -34,7 +40,6 @@ class Backup:
             t = conf.get('type')
             if t == 'dir':
                 self._backupDir(conf)
-                pass
             elif t == 'mariadb':
                 if conf.get('mode') == 'dump':
                     self._backupMariadbDump(conf)
@@ -124,8 +129,8 @@ if __name__ == "__main__":
     parser.add_argument('-v', '--verbose', action="store_true", help="verbose")
     parser.add_argument('-d', '--dir', type=str, default='/etc/PyBackup/',
                         help='Directory path for config files')
-    parser.add_argument('-c', '--config', default='', type=str,
-                        help='Config file')
+    parser.add_argument('-c', '--configs', nargs='+', type=str,
+                        help='Use list of configs in directory path')
 
     b = Backup(parser.parse_args())
     b.run()
