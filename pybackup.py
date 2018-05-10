@@ -31,6 +31,46 @@ import bz2
 import lzma
 
 
+class ValidationError(Exception):
+    def __init__(self, value):
+        self.value = 'Missing arg: '
+        self.value += value
+
+    def __str__(self):
+        return repr(self.value)
+
+
+class Config:
+    def __init__(self, fileName):
+        self.type = None
+        self.backup_dir = None
+        self.compression = None
+        self.path = None
+        self.name = None
+        self.dbname = None
+        self.mode = None
+        self.user = None
+        self.password = None
+
+        args = {'all': ['type', 'backup_dir', 'compression'],
+                'dir': ['path', 'name'],
+                'files': ['path', 'name'],
+                'mariadb': ['dbname', 'mode', 'user', 'password']}
+
+        with open(fileName, 'r') as jconfig:
+            conf = json.load(jconfig)
+            for a in args['all']:
+                if conf.get(a):
+                    exec('self.{} = "{}"'.format(a, conf.get(a)))
+                else:
+                    raise ValidationError(a)
+            for b in args.get(conf.get('type'), []):
+                if conf.get(b):
+                    exec('self.{} = conf.get(b)'.format(b,))
+                else:
+                    raise ValidationError(b)
+
+
 class Backup:
     def __init__(self, config):
         self.config = config
@@ -55,64 +95,111 @@ class Backup:
             self._info('Config directory not exitsts : {}'.format(configPath))
 
     def parseConfig(self, configFile):
-        with open(configFile, 'r') as jconfig:
-            conf = json.load(jconfig)
-            t = conf.get('type')
-            if t == 'dir':
-                self._backupDir(conf)
-            elif t == 'mariadb':
-                if conf.get('mode') == 'dump':
-                    self._backupMariadbDump(conf)
-                elif conf.get('mode') == 'json':
-                    self._backupMariadbJson(conf)
+        try:
+            conf = Config(configFile)
+        except ValidationError as err:
+            self._error(err)
+            return
+
+        if conf.type == 'dir':
+            self._backupDir(conf)
+        elif conf.type == 'files':
+            self._backupFiles(conf)
+        elif conf.type == 'mariadb':
+            if conf.mode == 'dump':
+                self._backupMariadbDump(conf)
+            elif conf.mode == 'json':
+                self._backupMariadbJson(conf)
+        else:
+            self._error('not recogize type: {}'.format())
 
     def _backupDir(self, conf):
-        compression = self._getCompressionType(conf.get('compression'))
-        name = os.path.join(conf.get('backup_dir', '.'),
-                            '{}_{}'.format(conf.get('name'), self._getTimeStamp()))
-        self._info('Backup directory {}'.format(conf.get('path')))
+        compression = self._getCompressionType(conf.compression)
+        # TODO hym nie podoba mi się to 
+        suffix = ''
+        if compression:
+            suffix = '.{}'.format(compression)
+        name = os.path.join(conf.backup_dir,
+                            '{}_{}.tar'.format(conf.name, self._getTimeStamp()))
+        self._info('Backup directory {}'.format(conf.path))
 
         try:
             tar = tarfile.open(name=name, mode='w:{}'.format(compression))
-            tar.add(conf.get('path'))
+            tar.add(conf.path)
             if self.config.verbose:
                 tar.list(verbose=True)
             tar.close()
         except PermissionError as err:
-            self._info(err)
+            self._error(err)
             tar.close()
             os.unlink(name)
         except FileNotFoundError as err:
-            self._info(err)
+            self._error(err)
             tar.close()
             os.unlink(name)
+
+    def _backupFiles(self, conf):
+        compression = self._getCompressionType(conf.compression)
+        suffix = ''
+        if compression:
+            suffix = '.{}'.format(compression)
+
+        name = os.path.join(conf.backup_dir,
+                            '{}_{}.tar{}'.format(conf.name, self._getTimeStamp(), suffix))
+
+        if not type(conf.path) == list:
+            self._error('TypeError: path is not a list')
+            print(conf.path, type(conf.path))
+            return
+
+        tar = tarfile.open(name=name, mode='w:{}'.format(compression))
+
+        for f in conf.path:
+            self._info('Backup file {}'.format(f))
+
+            try:
+                tar.add(f)
+            except PermissionError as err:
+                self._error(err)
+                tar.close()
+                os.unlink(name)
+                break
+            except FileNotFoundError as err:
+                self._error(err)
+                tar.close()
+                os.unlink(name)
+                break
+
+        if self.config.verbose and not tar.closed:
+            tar.list(verbose=True)
+        tar.close()
 
     def _backupMariadbDump(self, conf):
         args = ['mysqldump']
         name = 'mariadb'
-        if conf.get('dbname') == '*' or not conf.get('dbname'):
+        if conf.dbname == '*' or not conf.dbname:
             args.append('--all-databases')
         else:
-            args.append(conf.get('dbname'))
-            name = conf.get('dbname')
+            args.append(conf.dbname)
+            name = conf.dbname
         args.append('-u')
-        args.append(conf.get('user', 'root'))
-        args.append('--password={}'.format(conf.get('password', '')))
+        args.append(conf.user)
+        args.append('--password={}'.format(conf.password))
 
         self._info('Dumping DB {}'.format(name))
 
         ret = subprocess.run(args, stdout=subprocess.PIPE)
         if ret.returncode == 0:
-            self._saveToFile(conf.get('backup_dir', '.'),
+            self._saveToFile(conf.backup_dir,
                              name,
                              ret.stdout,
                              suffix='.sql',
-                             compression=conf.get('compression'))
+                             compression=conf.compression)
         else:
             self._info('Something was wrong :(')
 
     def _backupMariadbJson(self, conf):
-        print('dumping json {}'.format(conf.get('dbname')))
+        self._info('dumping json {}'.format(conf.dbname))
 
     def _saveToFile(self, path, name, data, suffix='', compression=None):
         output = os.path.join(path, '{}_{}{}'.format(name, self._getTimeStamp(), suffix))
@@ -143,6 +230,10 @@ class Backup:
         if self.config.verbose:
             print('>> {}'.format(msg))
 
+    def _error(self, msg):
+        if not self.config.quiet:
+            sys.stderr.write('!! {}\n'.format(msg))
+
     @staticmethod
     def _getTimeStamp():
         return datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -158,10 +249,11 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, stop_program)
     parser = argparse.ArgumentParser(usage='%(prog)s [options]')
     parser.add_argument('-v', '--verbose', action="store_true", help="verbose")
+    parser.add_argument('-q', '--quiet', action="store_true", help="Be Quiet")
     parser.add_argument('-d', '--dir', type=str, default='/etc/PyBackup/',
                         help='Directory path for config files')
     parser.add_argument('-c', '--configs', nargs='+', type=str,
-                        help='Use list of configs in directory path')
+                        help='Use list of configs in directory path. Default use all .json')
 
     b = Backup(parser.parse_args())
     b.run()
