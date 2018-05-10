@@ -51,6 +51,9 @@
 
 #### mariadb - create database dump
 * dbname - database name when name is "*" dumps all databases 
+* mode  - type of backup
+    * dump  - [mysqdump](https://mariadb.com/kb/en/library/mysqldump/)
+    * json - human frendly json files
 * user - db user name
 * password - db password
 * backup_dir - output path for 
@@ -62,11 +65,12 @@
 ```json
 {
   "type": "mariadb",
-  "dbname": "",
+  "dbname": "foodb",
+  "mode": "dummp",
   "user" : "foo",
   "password": "foobar",
   "backup_dir": "/home/user/backup",
-  "name": "etc",
+  "name": "foodb",
   "compression": "gz"
 }
 ```

@@ -1,4 +1,22 @@
 #!/usr/bin/python3
+# Copyright 2018 Angrysoft (Sebastian Zwierzchowski) sebastian.zwierzchowski(AT)gmail DOT com
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+__author__ = 'Sebastian Zwierzchowski'
+__copyright__ = 'Copyright 2018 Angrysoft Sebastian Zwierzchowski'
+__license__ = 'Apache 2.0'
+__version__ = '1.0'
 
 import signal
 import argparse
@@ -33,6 +51,8 @@ class Backup:
                     self.parseConfig(os.path.join(configPath, c))
                 else:
                     self._info('File "{}" not end with .json SKIPING'.format(c))
+        else:
+            self._info('Config directory not exitsts : {}'.format(configPath))
 
     def parseConfig(self, configFile):
         with open(configFile, 'r') as jconfig:
@@ -52,13 +72,20 @@ class Backup:
                             '{}_{}'.format(conf.get('name'), self._getTimeStamp()))
         self._info('Backup directory {}'.format(conf.get('path')))
 
-        with tarfile.open(name=name,
-                          mode='w:{}'.format(compression)) as tar:
-            if os.path.exists(conf.get('path')):
-                tar.add(conf.get('path'))
-                tar.close()
-            else:
-                sys.stderr.write('source not exits : {} : SKIPPIN\n'.format(conf.get('path')))
+        try:
+            tar = tarfile.open(name=name, mode='w:{}'.format(compression))
+            tar.add(conf.get('path'))
+            if self.config.verbose:
+                tar.list(verbose=True)
+            tar.close()
+        except PermissionError as err:
+            self._info(err)
+            tar.close()
+            os.unlink(name)
+        except FileNotFoundError as err:
+            self._info(err)
+            tar.close()
+            os.unlink(name)
 
     def _backupMariadbDump(self, conf):
         args = ['mysqldump']
@@ -72,6 +99,8 @@ class Backup:
         args.append(conf.get('user', 'root'))
         args.append('--password={}'.format(conf.get('password', '')))
 
+        self._info('Dumping DB {}'.format(name))
+
         ret = subprocess.run(args, stdout=subprocess.PIPE)
         if ret.returncode == 0:
             self._saveToFile(conf.get('backup_dir', '.'),
@@ -79,6 +108,8 @@ class Backup:
                              ret.stdout,
                              suffix='.sql',
                              compression=conf.get('compression'))
+        else:
+            self._info('Something was wrong :(')
 
     def _backupMariadbJson(self, conf):
         print('dumping json {}'.format(conf.get('dbname')))
@@ -96,7 +127,7 @@ class Backup:
             with bz2.open('{}.bz2'.format(output), 'wb') as bzFile:
                 bzFile.write(data)
         elif compression == 'xz':
-            with lzma.open('{}.gz'.format(output), 'wb') as xzFile:
+            with lzma.open('{}.xz'.format(output), 'wb') as xzFile:
                 xzFile.write(data)
         else:
             with open(output, 'wb') as oFile:
