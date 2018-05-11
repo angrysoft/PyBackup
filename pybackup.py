@@ -29,6 +29,10 @@ import subprocess
 import gzip
 import bz2
 import lzma
+# try:
+#     import mysql.connector as mariadb
+# except ModuleNotFoundError:
+#     import MySQLdb as mariadb
 
 
 class ValidationError(Exception):
@@ -199,7 +203,7 @@ class Backup:
             self._info('Something was wrong :(')
 
     def _backupMariadbJson(self, conf):
-        self._info('dumping json {}'.format(conf.dbname))
+        self._info('dumping json {} for now not implemented :('.format(conf.dbname))
 
     def _saveToFile(self, path, name, data, suffix='', compression=None):
         output = os.path.join(path, '{}_{}{}'.format(name, self._getTimeStamp(), suffix))

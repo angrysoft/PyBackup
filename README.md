@@ -54,7 +54,7 @@
 * dbname - database name when name is "*" dumps all databases 
 * mode  - type of backup
     * dump  - [mysqdump](https://mariadb.com/kb/en/library/mysqldump/)
-    * json - human frendly json files
+    * json - human frendly json files ( not implemented )
 * user - db user name
 * password - db password
 * backup_dir - output path for 
