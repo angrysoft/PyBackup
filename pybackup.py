@@ -115,7 +115,7 @@ class Backup:
 
     def _backupDir(self, conf):
         compression = self._getCompressionType(conf.compression)
-        # TODO hym nie podoba mi się to 
+        # TODO hym nie podoba mi się to
         suffix = ''
         if compression:
             suffix = '.{}'.format(compression)

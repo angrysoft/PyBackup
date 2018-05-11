@@ -1,5 +1,9 @@
 # Backaup
  Simple backup solution for backuping directory and databases.
+
+1. [Configs](#Configs)
+    1. [Dir](#dir---create-a-new-tar-archive-with-directory-as-source)
+
 ## Configs
  Configs files are json files for example:
 ```json
