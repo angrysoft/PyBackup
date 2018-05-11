@@ -1,0 +1,5 @@
+[Unit]
+Description=Daily Mariadb database dump
+
+[Service]
+ExecStart=/usr/local/bin/pybackup.py -c db.json

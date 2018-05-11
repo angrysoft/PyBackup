@@ -82,7 +82,7 @@ Run all backup congfigs end with .json in directory /etc/PyBackup
 pybackup -d /etc/PyBackup
 ```
 
-Run list configs in directory.
+Run list configs.
 ```bash
 pybackup -d /etc/PyBackup -c db.json etc.json
 ``` 

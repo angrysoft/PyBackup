@@ -250,6 +250,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(usage='%(prog)s [options]')
     parser.add_argument('-v', '--verbose', action="store_true", help="verbose")
     parser.add_argument('-q', '--quiet', action="store_true", help="Be Quiet")
+    parser.add_argument('-s', '--sums', action="store_true", help="Generate check sum file")
     parser.add_argument('-d', '--dir', type=str, default='/etc/PyBackup/',
                         help='Directory path for config files')
     parser.add_argument('-c', '--configs', nargs='+', type=str,
