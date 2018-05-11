@@ -1,9 +1,6 @@
 # Backaup
  Simple backup solution for backuping directory and databases.
 
-1. [Configs](#Configs)
-    1. [Dir](#dir---create-a-new-tar-archive-with-directory-as-source)
-
 ## Configs
  Configs files are json files for example:
 ```json
@@ -78,3 +75,14 @@
   "compression": "gz"
 }
 ```
+
+### Example of use
+Run all backup congfigs end with .json in directory /etc/PyBackup
+```bash
+pybackup -d /etc/PyBackup
+```
+
+Run list configs in directory.
+```bash
+pybackup -d /etc/PyBackup -c db.json etc.json
+``` 
