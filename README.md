@@ -53,7 +53,7 @@
 #### mariadb - create database dump
 * dbname - database name when name is "*" dumps all databases 
 * mode  - type of backup
-    * dump  - [mysqdump](https://mariadb.com/kb/en/library/mysqldump/)
+    * dump  - [mysqldump](https://mariadb.com/kb/en/library/mysqldump/)
     * json - human frendly json files ( not implemented )
 * user - db user name
 * password - db password
@@ -77,7 +77,7 @@
 ```
 
 ### Example of use
-Run all backup congfigs end with .json in directory /etc/PyBackup
+Run all backup configs end with .json in directory /etc/PyBackup
 ```bash
 pybackup -d /etc/PyBackup
 ```
